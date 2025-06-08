@@ -14,6 +14,21 @@ class EndSession(Exception):
 class CommandHandler:
     """命令处理程序"""
 
+    @staticmethod
+    def parse_cmd(line: str):
+        parts = line.split(' ', 1)
+        cmd = parts[0]
+        # 命令以/开头，否则视为聊天内容
+        if cmd.startswith('/'):
+            cmd = cmd[1:]
+            if len(parts) > 1:
+                line = parts[1].strip()
+            else:
+                line = ''
+        else:
+            cmd = 'say'
+        return cmd, line
+
     def unknown(self, session: 'ChatSession', cmd: str):
         session.push(f'Unknown command: {cmd}\r\n'.encode())
 
@@ -21,13 +36,8 @@ class CommandHandler:
         line = line.strip()
         if not line:
             return
-        # 将输入的第一个单词解析成命令
-        parts = line.split(' ', 1)
-        cmd = parts[0]
-        if len(parts) > 1:
-            line = parts[1].strip()
-        else:
-            line = ''
+        # 从输入内容中解析命令
+        cmd, line = self.parse_cmd(line)
         # 查找以do_为前缀的对应命令的执行方法
         method = getattr(self, f'do_{cmd}', None)
         if callable(method):
@@ -64,7 +74,7 @@ class LoginRoom(Room):
 
     @staticmethod
     def tip(session: 'ChatSession'):
-        session.push(f'Please log in using "login <nick>" or log out with "logout"\r\n'.encode())
+        session.push(f'Please log in using "/login <nick>" or log out with "/logout"\r\n'.encode())
 
     def unknown(self, session: 'ChatSession', cmd: str):
         self.tip(session)
